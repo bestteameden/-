@@ -1,15 +1,10 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { AdvertiserInfo, ScriptResult, ScenePlanItem, Shot } from "../types";
 
-// Vite defines process.env.API_KEY via string replacement.
-const API_KEY = process.env.API_KEY || "";
-
-const getClient = () => {
-  if (!API_KEY) {
-    throw new Error("API Key가 설정되지 않았습니다. 환경 변수(API_KEY)를 확인해주세요.");
-  }
-  return new GoogleGenAI({ apiKey: API_KEY });
-};
+// Always use process.env.API_KEY directly as per strict guidelines.
+// The API key must be obtained exclusively from the environment variable process.env.API_KEY.
+// Assume this variable is pre-configured, valid, and accessible in the execution context.
+const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 // Helper to clean markdown code blocks from response
 const cleanJsonText = (text: string): string => {
@@ -22,7 +17,6 @@ const cleanJsonText = (text: string): string => {
 };
 
 export const generateScript = async (info: AdvertiserInfo): Promise<ScriptResult> => {
-  const ai = getClient();
   const prompt = `
     당신은 대한민국 상위 1% 뷰티 바이럴 전문 PD이자 대본 작가입니다. 
     에덴 마케팅의 성공 영상 98개를 전수 분석한 데이터 기반의 '백만 뷰 필승 공식'만을 사용하여 대본을 작성하세요.
@@ -102,7 +96,6 @@ export const generateScript = async (info: AdvertiserInfo): Promise<ScriptResult
 };
 
 export const generateScenePlan = async (script: string, shotDb: Shot[]): Promise<ScenePlanItem[]> => {
-  const ai = getClient();
   const shotDbString = JSON.stringify(shotDb);
   
   const prompt = `
