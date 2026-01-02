@@ -145,7 +145,7 @@ const ScriptGenerator: React.FC<Props> = ({ onTransferToScene }) => {
         ) : (
           <>
             <div className="flex bg-gray-900 border-b border-gray-800">
-              {['전략 분석', '후킹/흐름', '원고 스크립트', '성공 포인트'].map((tab, idx) => (
+              {['기획/전략', '구성요소', '원고', '성공포인트'].map((tab, idx) => (
                 <button
                   key={idx}
                   onClick={() => setActiveResultTab(idx)}
@@ -158,43 +158,51 @@ const ScriptGenerator: React.FC<Props> = ({ onTransferToScene }) => {
             
             <div className="flex-1 p-6 overflow-y-auto">
               {activeResultTab === 0 && (
-                <div className="animate-fade-in">
-                  <h3 className="text-[#87CEEB] font-bold mb-2">탭 1-1. 기획 의도</h3>
-                  <p className="bg-black p-4 border border-gray-800 rounded-lg text-sm leading-relaxed mb-6">
-                    {result.intentAnalysis}
-                  </p>
-                  <h3 className="text-[#87CEEB] font-bold mb-2">탭 1-2. 전략 분석 (금기어 대체 및 전문성)</h3>
-                  <p className="bg-black p-4 border border-gray-800 rounded-lg text-sm leading-relaxed">
-                    {result.strategyAnalysis}
-                  </p>
+                <div className="animate-fade-in space-y-6">
+                  <div>
+                    <h3 className="text-[#87CEEB] font-bold mb-2 flex items-center gap-2">
+                      <i className="fas fa-lightbulb"></i> 탭 1-1. 기획 의도 및 후킹 전략
+                    </h3>
+                    <p className="bg-black p-5 border border-gray-800 rounded-xl text-sm leading-loose text-gray-300">
+                      {result.hookStrategy}
+                    </p>
+                  </div>
+                  <div>
+                    <h3 className="text-[#87CEEB] font-bold mb-2 flex items-center gap-2">
+                      <i className="fas fa-shield-alt"></i> 탭 1-2. 금기어 대체 및 전문성
+                    </h3>
+                    <p className="bg-black p-5 border border-gray-800 rounded-xl text-sm leading-loose text-gray-300">
+                      {result.keywordStrategy}
+                    </p>
+                  </div>
                 </div>
               )}
               {activeResultTab === 1 && (
                 <div className="animate-fade-in space-y-6">
-                  <div className="flex items-center justify-between bg-black p-4 border border-gray-800 rounded-lg">
-                    <span className="text-gray-500 text-sm">후킹 기법</span>
-                    <span className="font-bold text-[#87CEEB]">{result.hookType}</span>
+                  <div className="bg-black p-6 border border-gray-800 rounded-xl">
+                    <div className="text-gray-500 text-xs mb-1">첫문장 기법 (18 Hooks)</div>
+                    <div className="font-bold text-[#87CEEB] text-xl">{result.hookType}</div>
                   </div>
-                  <div className="flex items-center justify-between bg-black p-4 border border-gray-800 rounded-lg">
-                    <span className="text-gray-500 text-sm">문맥 흐름</span>
-                    <span className="font-bold text-[#87CEEB]">{result.flowType}</span>
+                  <div className="bg-black p-6 border border-gray-800 rounded-xl">
+                    <div className="text-gray-500 text-xs mb-1">문맥 흐름 (10 Flow Paths)</div>
+                    <div className="font-bold text-[#87CEEB] text-xl">{result.flowType}</div>
                   </div>
-                  <div className="flex items-center justify-between bg-black p-4 border border-gray-800 rounded-lg">
-                    <span className="text-gray-500 text-sm">공백 포함 글자수</span>
-                    <span className="font-bold text-white">{result.charCount}자</span>
+                  <div className="bg-black p-6 border border-gray-800 rounded-xl">
+                    <div className="text-gray-500 text-xs mb-1">공백 포함 글자수</div>
+                    <div className="font-bold text-white text-xl">{result.charCount}자</div>
                   </div>
                 </div>
               )}
               {activeResultTab === 2 && (
-                <div className="animate-fade-in">
-                  <div className="bg-black p-6 border border-gray-800 rounded-lg font-medium text-lg leading-loose whitespace-pre-wrap font-mono">
+                <div className="animate-fade-in h-full">
+                  <div className="bg-black p-6 border border-gray-800 rounded-xl font-medium text-lg leading-loose whitespace-pre-wrap font-mono h-full overflow-y-auto text-gray-200">
                     {result.fullScript}
                   </div>
                 </div>
               )}
               {activeResultTab === 3 && (
                 <div className="animate-fade-in">
-                   <div className="bg-black p-4 border border-gray-800 rounded-lg text-sm leading-relaxed whitespace-pre-wrap">
+                   <div className="bg-black p-6 border border-gray-800 rounded-xl text-sm leading-loose whitespace-pre-wrap text-gray-300">
                     {result.successPoints}
                   </div>
                 </div>
@@ -204,9 +212,9 @@ const ScriptGenerator: React.FC<Props> = ({ onTransferToScene }) => {
             <div className="p-4 border-t border-gray-800 bg-gray-950">
               <button 
                 onClick={() => onTransferToScene(result.fullScript)}
-                className="w-full bg-[#87CEEB] text-black font-bold py-4 rounded-xl hover:bg-white transition-all flex items-center justify-center gap-2"
+                className="w-full bg-[#87CEEB] text-black font-bold py-4 rounded-xl hover:bg-white transition-all flex items-center justify-center gap-2 shadow-lg shadow-[#87CEEB]/10"
               >
-                이 대본으로 촬영 구도안 만들기 <i className="fas fa-arrow-right"></i>
+                <i className="fas fa-video"></i> 이 대본으로 촬영 구도안 만들기
               </button>
             </div>
           </>

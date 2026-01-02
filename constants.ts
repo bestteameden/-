@@ -28,7 +28,12 @@ export const INITIAL_SHOT_DB: Shot[] = [
   { id: '12', category: '클라이맥스 (결과)', name: '바이너리 하프', action: '피부 반전', description: '얼굴 반을 손으로 가리고 있다가 문구에 맞춰 손을 치우며 반전 피부 노출.', link: 'https://example.com/ref12' },
   { id: '13', category: '클라이맥스 (결과)', name: '팩 떼기', action: '카타르시스', description: '얼굴에 밀착된 팩을 가장자리부터 쫀득하게 한 번에 떼어내는 1초 컷.', link: 'https://example.com/ref13' },
   { id: '14', category: '클라이맥스 (결과)', name: '광택 부심', action: '틸트 샷', description: '고개를 좌우로 천천히 돌리며 피부의 반사광을 조명에 반사시키는 틸트 샷.', link: 'https://example.com/ref14' },
-  { id: '15', category: '클라이맥스 (결과)', name: '탄력 탱글', action: '피부 탄력', description: '검지로 볼을 콕 찔렀을 때 피부가 즉각적으로 차오르는 탄력 시연 샷.', link: 'https://example.com/ref15' }
+  { id: '15', category: '클라이맥스 (결과)', name: '탄력 탱글', action: '피부 탄력', description: '검지로 볼을 콕 찔렀을 때 피부가 즉각적으로 차오르는 탄력 시연 샷.', link: 'https://example.com/ref15' },
+
+  // D. 만능 브릿지 (New)
+  { id: '16', category: '만능 브릿지 (연결)', name: '강한 긍정', action: '공감', description: '카메라를 보며 "맞아 맞아" 하듯 고개를 크게 여러 번 끄덕이는 액션.', link: 'https://example.com/ref16' },
+  { id: '17', category: '만능 브릿지 (연결)', name: '제품 들이밀기', action: '강조', description: '제품을 카메라 렌즈 쪽으로 확 밀었다가 다시 당기는 역동적 동작.', link: 'https://example.com/ref17' },
+  { id: '18', category: '만능 브릿지 (연결)', name: '저장 찌르기', action: '유도', description: '화면 하단 우측(저장 버튼 위치)을 손가락으로 콕 찌르며 윙크하는 액션.', link: 'https://example.com/ref18' }
 ];
 
 export const HOOK_STRATEGIES = [
