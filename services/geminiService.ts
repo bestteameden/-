@@ -39,32 +39,37 @@ export const generateScript = async (info: AdvertiserInfo): Promise<ScriptResult
     - successPoints: 성공 포인트 3가지
   `;
 
-  const response = await ai.models.generateContent({
-    model: "gemini-3-pro-preview",
-    contents: prompt,
-    config: {
-      responseMimeType: "application/json",
-      responseSchema: {
-        type: Type.OBJECT,
-        properties: {
-          intentAnalysis: { type: Type.STRING },
-          strategyAnalysis: { type: Type.STRING },
-          hookType: { type: Type.STRING },
-          flowType: { type: Type.STRING },
-          charCount: { type: Type.INTEGER },
-          fullScript: { type: Type.STRING },
-          successPoints: { type: Type.STRING },
-        },
-        required: ["intentAnalysis", "strategyAnalysis", "hookType", "flowType", "charCount", "fullScript", "successPoints"]
+  try {
+    const response = await ai.models.generateContent({
+      model: "gemini-3-pro-preview",
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            intentAnalysis: { type: Type.STRING },
+            strategyAnalysis: { type: Type.STRING },
+            hookType: { type: Type.STRING },
+            flowType: { type: Type.STRING },
+            charCount: { type: Type.INTEGER },
+            fullScript: { type: Type.STRING },
+            successPoints: { type: Type.STRING },
+          },
+          required: ["intentAnalysis", "strategyAnalysis", "hookType", "flowType", "charCount", "fullScript", "successPoints"]
+        }
       }
-    }
-  });
+    });
 
-  const text = response.text;
-  if (!text) {
-    throw new Error("AI returned empty response");
+    const text = response.text;
+    if (!text) {
+      throw new Error("AI returned empty response");
+    }
+    return JSON.parse(text as string);
+  } catch (error) {
+    console.error("Gemini API Error (Script):", error);
+    throw error;
   }
-  return JSON.parse(text);
 };
 
 export const generateScenePlan = async (script: string, shotDb: Shot[]): Promise<ScenePlanItem[]> => {
@@ -88,38 +93,43 @@ export const generateScenePlan = async (script: string, shotDb: Shot[]): Promise
     5. 추천구도 안에는 shotName, description(상세 동작), link(DB의 원본 링크)를 포함하세요.
   `;
 
-  const response = await ai.models.generateContent({
-    model: "gemini-3-pro-preview",
-    contents: prompt,
-    config: {
-      responseMimeType: "application/json",
-      responseSchema: {
-        type: Type.ARRAY,
-        items: {
-          type: Type.OBJECT,
-          properties: {
-            sentenceId: { type: Type.INTEGER },
-            sentence: { type: Type.STRING },
-            recommendations: {
-              type: Type.ARRAY,
-              items: {
-                type: Type.OBJECT,
-                properties: {
-                  shotName: { type: Type.STRING },
-                  description: { type: Type.STRING },
-                  link: { type: Type.STRING },
+  try {
+    const response = await ai.models.generateContent({
+      model: "gemini-3-pro-preview",
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.ARRAY,
+          items: {
+            type: Type.OBJECT,
+            properties: {
+              sentenceId: { type: Type.INTEGER },
+              sentence: { type: Type.STRING },
+              recommendations: {
+                type: Type.ARRAY,
+                items: {
+                  type: Type.OBJECT,
+                  properties: {
+                    shotName: { type: Type.STRING },
+                    description: { type: Type.STRING },
+                    link: { type: Type.STRING },
+                  },
                 },
               },
             },
           },
         },
-      },
-    }
-  });
+      }
+    });
 
-  const text = response.text;
-  if (!text) {
-    throw new Error("AI returned empty response");
+    const text = response.text;
+    if (!text) {
+      throw new Error("AI returned empty response");
+    }
+    return JSON.parse(text as string);
+  } catch (error) {
+    console.error("Gemini API Error (Scene):", error);
+    throw error;
   }
-  return JSON.parse(text);
 };
