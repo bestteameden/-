@@ -37,9 +37,10 @@ const ScriptGenerator: React.FC<Props> = ({ onTransferToScene }) => {
       const data = await generateScript(info);
       setResult(data);
       setActiveResultTab(0);
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
-      alert('대본 생성 중 오류가 발생했습니다.');
+      const msg = error.message || "알 수 없는 오류";
+      alert(`대본 생성 실패: ${msg}\n(콘솔 로그를 확인해주세요)`);
     } finally {
       setLoading(false);
     }
