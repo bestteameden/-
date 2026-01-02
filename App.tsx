@@ -1,9 +1,11 @@
+
 import React, { useState, useEffect } from 'react';
 import { AppTab, Shot } from './types';
 import { db } from './services/databaseService';
 import Layout from './components/Layout';
 import ScriptGenerator from './components/ScriptGenerator';
 import ScenePlanMaker from './components/ScenePlanMaker';
+import MetaCalculator from './components/MetaCalculator';
 import AdminDashboard from './components/AdminDashboard';
 
 const App: React.FC = () => {
@@ -178,6 +180,10 @@ const App: React.FC = () => {
       {activeTab === AppTab.SCENE_PLAN_MAKER && (
         <ScenePlanMaker initialScript={transferredScript} shotDb={shotDb} />
       )}
+
+      {activeTab === AppTab.META_CALCULATOR && (
+        <MetaCalculator />
+      )}
       
       {activeTab === AppTab.ADMIN_PAGE && (
         <div className="max-w-4xl mx-auto">
@@ -205,6 +211,11 @@ const App: React.FC = () => {
                   관리자 로그인
                 </button>
               </form>
+              
+              {/* Admin Hint */}
+              <div className="mt-6 text-xs text-gray-700">
+                 Hint: jihan / 1234
+              </div>
             </div>
           ) : (
             <AdminDashboard 

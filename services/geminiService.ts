@@ -1,5 +1,5 @@
 import { GoogleGenAI, Type } from "@google/genai";
-import { AdvertiserInfo, ScriptResult, ScenePlanItem, Shot } from "../types";
+import { AdvertiserInfo, ScriptResult, ScenePlanItem, Shot, MetaInputs, MetaAnalysisResult } from "../types";
 
 // Helper to clean markdown code blocks from response
 const cleanJsonText = (text: string): string => {
@@ -216,7 +216,6 @@ Provide the result strictly in JSON format matching the schema below, but follow
 
   try {
     // Switched to gemini-3-flash-preview for faster processing of large JSON responses
-    // gemini-3-pro-preview was timing out due to thinking budget and large context
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview", 
       contents: prompt,
@@ -264,6 +263,172 @@ Provide the result strictly in JSON format matching the schema below, but follow
 
   } catch (error) {
     handleApiError(error, "Scene");
+    throw error;
+  }
+};
+
+export const generateMetaAnalysis = async (inputs: MetaInputs): Promise<MetaAnalysisResult> => {
+  const ai = getAiClient();
+  const prompt = `
+# [Role]
+당신은 메타(Meta) 퍼포먼스 마케팅 데이터 분석 전문가입니다. 
+감이나 추측이 아닌 "수식 → 계산 → 논리 → 결론"의 과정을 통해 광고주의 상품이 광고 가능한 구조인지 진단하고, 최적의 비딩 값과 운영 전략을 제안합니다.
+
+[Input Data]
+- S (Price, 판매가): ${inputs.price}원
+- M (Margin, 개당 순마진): ${inputs.margin}원
+- CPM (노출당 비용): ${inputs.cpm}원 (0 indicates missing data)
+- CTR (클릭률): ${inputs.ctr}% (0 indicates missing data)
+- CVR (전환율): ${inputs.cvr}% (0 indicates missing data)
+
+# [Section 1: 핵심 변수 및 수식 정의 (The Meta Math)]
+1. CPC (Click Cost): CPM / (1000 * (CTR/100))
+2. MCVR (Max CPC Capacity): M * (CVR/100) (손해 안 보는 클릭당 최대 비용 한계치)
+3. EndROAS (Breakeven ROAS): S / M (손익분기점 ROAS)
+4. OptROAS (Optimal ROAS): 2 * EndROAS (순이익 최대화를 위한 목표치)
+5. OptCPC: MCVR / 2 (이론상 순이익이 극대화되는 CPC)
+6. MaxROI_ad: MCVR / ActualCPC (1보다 낮으면 구조적 적자)
+
+# [Section 2: 광고 적합성 진단 로직]
+(Perform this ONLY if CPM/CTR/CVR are provided)
+1. [구조적 진단]: MCVR(MaxCPC)이 현재 매체 평균 CPC보다 낮은가?
+   - YES: 광고를 돌릴수록 손해인 구조.
+   - NO: 광고 집행 가능. 최적화 구간 탐색 시작.
+2. [ROAS 구간 판단]:
+   - 목표 ROAS < EndROAS: 시장 점유 및 데이터 확보를 위한 '공격형 손해' 구간.
+   - 목표 ROAS = EndROAS: 수익 없이 매출 볼륨만 키우는 '규모 확장' 구간.
+   - 목표 ROAS = OptROAS: 기업의 순수익이 가장 많이 남는 '알짜 경영' 구간.
+
+# [Section 3: 메타 특화 전략 수립 (CTR/CVR 기준)]
+(Perform this ONLY if CPM/CTR/CVR are provided)
+1. [CTR 높음 / CVR 낮음]: 콘텐츠 후킹은 성공했으나, 상세페이지나 랜딩페이지에서 이탈.
+   - 전략: 상세페이지 UI/UX 개선, 이벤트/혜택 강조, 리마케팅(DABA) 비중 확대.
+2. [CTR 낮음 / CVR 높음]: 상품성은 검증됐으나, 광고 소재(Creative)가 매력이 없음.
+   - 전략: 에덴 98개 영상 분석 로직 적용, 후킹(Hook) 교체, 소재 다각화(이미지 vs 영상).
+3. [둘 다 낮음]: 상품성 부재 또는 타겟팅 완전 오류. 
+   - 전략: 광고 즉시 중단 및 상품 기획 재검토.
+
+# [Section 5: 광고 집행 전 시뮬레이션 (Pre-Ad Simulation)]
+(Perform this ONLY if CPM/CTR/CVR are missing or zero. User provided only S and M)
+
+1. [생존 하한선 계산]:
+   - EndROAS (S / M)를 계산하여 "절대 넘지 말아야 할 광고비 비중"을 경고한다.
+   
+2. [필수 KPI 역산]:
+   - 메타 뷰티 평균 CPC(600원)를 가성 데이터로 대입하여 [필요 CVR]을 역산한다.
+   - 수식: Required CVR = 600 / M
+   - 결론 도출: "상세페이지에서 최소 00%의 전환율을 뽑아낼 자신이 없다면 광고 집행을 재고해야 합니다."
+
+3. [광고비 효율 시뮬레이션 표 출력]:
+   - CPC가 400원, 700원, 1000원일 때 각각 필요한 [손익분기 CVR]과 [수익 발생 CVR]을 표로 보여준다.
+   - Breakeven CVR = CPC / M
+   - Profitable CVR = (CPC * 2) / M (Assuming OptROAS goal)
+
+4. [전략적 조언]:
+   - 집행 전이라면 광고 소재(에덴 98개 로직)로 CTR을 높여 CPC를 낮출 것인지, 
+   - 아니면 상세페이지 개선으로 CVR을 높여 MaxCPC 한계치를 높일 것인지 우선순위를 제안한다.
+
+# [Section 4: 응답 프로세스 및 출력 양식]
+Analyze the provided input data.
+IF CPM, CTR, and CVR are provided (> 0), set 'mode' to 'ANALYSIS' and fill 'tableData', 'verdict', 'recommendation', 'strategy'. Leave 'simulation' null.
+IF CPM, CTR, or CVR are missing (0), set 'mode' to 'SIMULATION' and fill 'simulation'. Leave other fields null.
+
+[Output Format]
+Provide the result strictly in JSON format matching the schema below.
+  `;
+
+  try {
+    const response = await ai.models.generateContent({
+      model: "gemini-3-flash-preview", 
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            mode: { type: Type.STRING, enum: ["ANALYSIS", "SIMULATION"] },
+            
+            // Full Analysis Fields
+            tableData: {
+              type: Type.OBJECT,
+              properties: {
+                marginRate: { type: Type.STRING },
+                endRoas: { type: Type.STRING },
+                optRoas: { type: Type.STRING },
+                mcvr: { type: Type.STRING },
+                optCpc: { type: Type.STRING },
+                currentRoi: { type: Type.STRING }
+              },
+              nullable: true
+            },
+            verdict: {
+              type: Type.OBJECT,
+              properties: {
+                possible: { type: Type.BOOLEAN },
+                reason: { type: Type.STRING }
+              },
+              nullable: true
+            },
+            recommendation: {
+              type: Type.OBJECT,
+              properties: {
+                targetRoas: { type: Type.STRING },
+                targetCpc: { type: Type.STRING },
+                adjustment: { type: Type.STRING }
+              },
+              nullable: true
+            },
+            strategy: {
+              type: Type.OBJECT,
+              properties: {
+                actionItems: { type: Type.ARRAY, items: { type: Type.STRING } }
+              },
+              nullable: true
+            },
+
+            // Simulation Fields
+            simulation: {
+              type: Type.OBJECT,
+              properties: {
+                survivalRoas: { type: Type.STRING, description: "생존 하한선 ROAS (EndROAS)" },
+                avgCpc: { type: Type.STRING, description: "기준 평균 CPC (600원)" },
+                requiredCvr: { type: Type.STRING, description: "필요 전환율 (600원 기준)" },
+                scenarios: {
+                  type: Type.ARRAY,
+                  items: {
+                    type: Type.OBJECT,
+                    properties: {
+                      cpc: { type: Type.STRING },
+                      breakEvenCvr: { type: Type.STRING },
+                      profitableCvr: { type: Type.STRING }
+                    }
+                  }
+                },
+                advice: { type: Type.STRING, description: "전략적 조언" }
+              },
+              nullable: true
+            }
+          },
+          required: ["mode"]
+        },
+      }
+    });
+
+    const text = response.text;
+    if (!text) {
+      throw new Error("AI returned empty response");
+    }
+
+    try {
+      const cleanText = cleanJsonText(text);
+      return JSON.parse(cleanText);
+    } catch (parseError) {
+      console.error("JSON Parse Error:", parseError);
+      throw new Error("AI 응답을 분석하는 중 오류가 발생했습니다.");
+    }
+
+  } catch (error) {
+    handleApiError(error, "Meta Analysis");
     throw error;
   }
 };

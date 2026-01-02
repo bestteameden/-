@@ -42,6 +42,13 @@ export const db = {
     return await processRequest(updated);
   },
 
+  updateShot: async (updatedShot: Shot): Promise<Shot[]> => {
+    const current = db.getShots();
+    const updated = current.map(s => s.id === updatedShot.id ? updatedShot : s);
+    localStorage.setItem(KEYS.SHOTS, JSON.stringify(updated));
+    return await processRequest(updated);
+  },
+
   deleteShot: async (id: string): Promise<Shot[]> => {
     const current = db.getShots();
     const updated = current.filter(s => s.id !== id);

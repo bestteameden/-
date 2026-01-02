@@ -2,6 +2,7 @@
 export enum AppTab {
   SCRIPT_GENERATOR = 'SCRIPT_GENERATOR',
   SCENE_PLAN_MAKER = 'SCENE_PLAN_MAKER',
+  META_CALCULATOR = 'META_CALCULATOR',
   ADMIN_PAGE = 'ADMIN_PAGE'
 }
 
@@ -44,4 +45,51 @@ export interface ScenePlanItem {
     description: string;
     link: string;
   }>;
+}
+
+export interface MetaInputs {
+  price: number;       // S (판매가)
+  margin: number;      // M (개당 순마진)
+  cpm: number;         // CPM
+  ctr: number;         // CTR (%)
+  cvr: number;         // CVR (%)
+}
+
+export interface MetaAnalysisResult {
+  mode: 'ANALYSIS' | 'SIMULATION';
+  
+  // Fields for Full Analysis (mode === 'ANALYSIS')
+  tableData?: {
+    marginRate: string;
+    endRoas: string;
+    optRoas: string;
+    mcvr: string;
+    optCpc: string;
+    currentRoi: string;
+  };
+  verdict?: {
+    possible: boolean;
+    reason: string;
+  };
+  recommendation?: {
+    targetRoas: string;
+    targetCpc: string;
+    adjustment: string;
+  };
+  strategy?: {
+    actionItems: string[];
+  };
+
+  // Fields for Simulation (mode === 'SIMULATION')
+  simulation?: {
+    survivalRoas: string;
+    avgCpc: string;
+    requiredCvr: string;
+    scenarios: Array<{
+      cpc: string;
+      breakEvenCvr: string;
+      profitableCvr: string;
+    }>;
+    advice: string;
+  };
 }

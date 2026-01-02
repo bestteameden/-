@@ -14,6 +14,9 @@ const AdminDashboard: React.FC<Props> = ({ shotDb, setShotDb, staffAccounts, set
   const [activeTab, setActiveTab] = useState<'shots' | 'staff'>('shots');
   const [isProcessing, setIsProcessing] = useState(false);
   
+  // Edit Mode State
+  const [editingId, setEditingId] = useState<string | null>(null);
+
   // New Shot Form
   const [newShot, setNewShot] = useState<Omit<Shot, 'id'>>({
     category: '도입부 (3초 후킹)',
@@ -26,26 +29,55 @@ const AdminDashboard: React.FC<Props> = ({ shotDb, setShotDb, staffAccounts, set
   // New Staff Form
   const [newStaff, setNewStaff] = useState({ id: '', pw: '' });
 
-  const handleAddShot = async () => {
+  const handleSaveShot = async () => {
     if (!newShot.name || !newShot.description) return;
     setIsProcessing(true);
     try {
-      const shot: Shot = {
-        ...newShot,
-        id: Date.now().toString()
-      };
-      // DB 저장 및 상태 업데이트
-      const updatedShots = await db.addShot(shot);
-      setShotDb(updatedShots);
+      if (editingId) {
+        // Update existing shot
+        const shot: Shot = {
+          ...newShot,
+          id: editingId
+        };
+        const updatedShots = await db.updateShot(shot);
+        setShotDb(updatedShots);
+        alert('성공적으로 수정되었습니다.');
+      } else {
+        // Add new shot
+        const shot: Shot = {
+          ...newShot,
+          id: Date.now().toString()
+        };
+        const updatedShots = await db.addShot(shot);
+        setShotDb(updatedShots);
+        alert('성공적으로 DB에 저장되었습니다.');
+      }
       
-      // 폼 초기화
+      // Reset form
       setNewShot({ category: '도입부 (3초 후킹)', name: '', action: '', description: '', link: '' });
-      alert('성공적으로 DB에 저장되었습니다.');
+      setEditingId(null);
     } catch (e) {
       alert('저장 중 오류가 발생했습니다.');
     } finally {
       setIsProcessing(false);
     }
+  };
+
+  const handleEditClick = (shot: Shot) => {
+    setNewShot({
+      category: shot.category,
+      name: shot.name,
+      action: shot.action,
+      description: shot.description,
+      link: shot.link
+    });
+    setEditingId(shot.id);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleCancelEdit = () => {
+    setNewShot({ category: '도입부 (3초 후킹)', name: '', action: '', description: '', link: '' });
+    setEditingId(null);
   };
 
   const handleDeleteShot = async (id: string) => {
@@ -54,6 +86,10 @@ const AdminDashboard: React.FC<Props> = ({ shotDb, setShotDb, staffAccounts, set
     try {
       const updatedShots = await db.deleteShot(id);
       setShotDb(updatedShots);
+      // If we deleted the item currently being edited, reset form
+      if (editingId === id) {
+        handleCancelEdit();
+      }
     } finally {
       setIsProcessing(false);
     }
@@ -108,9 +144,10 @@ const AdminDashboard: React.FC<Props> = ({ shotDb, setShotDb, staffAccounts, set
         {activeTab === 'shots' ? (
           <div className="space-y-12">
             {/* Shot Form */}
-            <div className="bg-black border border-gray-800 rounded-2xl p-6">
+            <div className={`bg-black border rounded-2xl p-6 transition-colors ${editingId ? 'border-[#87CEEB]' : 'border-gray-800'}`}>
               <h3 className="text-lg font-bold mb-6 flex items-center gap-2">
-                <i className="fas fa-database text-[#87CEEB]"></i> 신규 구도 DB 등록
+                <i className={`fas ${editingId ? 'fa-pen-to-square' : 'fa-database'} text-[#87CEEB]`}></i> 
+                {editingId ? '구도 DB 수정 모드' : '신규 구도 DB 등록'}
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
@@ -123,7 +160,7 @@ const AdminDashboard: React.FC<Props> = ({ shotDb, setShotDb, staffAccounts, set
                     <option>도입부 (3초 후킹)</option>
                     <option>전개부 (증거/과정)</option>
                     <option>클라이맥스 (결과)</option>
-                    <option>브릿지 (연결)</option>
+                    <option>만능 브릿지 (연결)</option>
                   </select>
                 </div>
                 <div>
@@ -163,14 +200,24 @@ const AdminDashboard: React.FC<Props> = ({ shotDb, setShotDb, staffAccounts, set
                   />
                 </div>
               </div>
-              <button 
-                onClick={handleAddShot}
-                disabled={isProcessing}
-                className="mt-6 px-8 py-3 bg-[#87CEEB] text-black font-bold rounded-xl hover:bg-white transition-all disabled:opacity-50 flex items-center gap-2"
-              >
-                {isProcessing && <i className="fas fa-spinner fa-spin"></i>}
-                데이터베이스에 저장
-              </button>
+              <div className="flex gap-2 mt-6">
+                <button 
+                  onClick={handleSaveShot}
+                  disabled={isProcessing}
+                  className={`px-8 py-3 font-bold rounded-xl hover:bg-white transition-all disabled:opacity-50 flex items-center gap-2 ${editingId ? 'bg-orange-500 text-white hover:text-black' : 'bg-[#87CEEB] text-black'}`}
+                >
+                  {isProcessing && <i className="fas fa-spinner fa-spin"></i>}
+                  {editingId ? '수정사항 저장' : '데이터베이스에 저장'}
+                </button>
+                {editingId && (
+                  <button 
+                    onClick={handleCancelEdit}
+                    className="px-6 py-3 bg-gray-800 text-gray-300 font-bold rounded-xl hover:bg-gray-700 transition-all"
+                  >
+                    취소
+                  </button>
+                )}
+              </div>
             </div>
 
             {/* Shot List */}
@@ -181,15 +228,25 @@ const AdminDashboard: React.FC<Props> = ({ shotDb, setShotDb, staffAccounts, set
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {shotDb.map(shot => (
-                  <div key={shot.id} className="bg-black border border-gray-800 rounded-xl p-4 flex flex-col group hover:border-[#87CEEB] transition-colors">
+                  <div key={shot.id} className={`bg-black border rounded-xl p-4 flex flex-col group transition-all ${editingId === shot.id ? 'border-orange-500 shadow-[0_0_15px_rgba(249,115,22,0.3)]' : 'border-gray-800 hover:border-[#87CEEB]'}`}>
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-[10px] bg-gray-800 px-2 py-1 rounded text-gray-400 group-hover:text-white transition-colors">{shot.category}</span>
-                      <button onClick={() => handleDeleteShot(shot.id)} className="text-gray-600 hover:text-red-500 transition-colors">
-                        <i className="fas fa-trash-alt"></i>
-                      </button>
+                      <div className="flex gap-2 opacity-100 transition-opacity">
+                        <button onClick={() => handleEditClick(shot)} className="text-gray-600 hover:text-[#87CEEB] transition-colors" title="수정">
+                          <i className="fas fa-pen"></i>
+                        </button>
+                        <button onClick={() => handleDeleteShot(shot.id)} className="text-gray-600 hover:text-red-500 transition-colors" title="삭제">
+                          <i className="fas fa-trash-alt"></i>
+                        </button>
+                      </div>
                     </div>
                     <h4 className="font-bold mb-1">{shot.name}</h4>
                     <p className="text-xs text-gray-500 line-clamp-2 flex-1">{shot.description}</p>
+                    {editingId === shot.id && (
+                        <div className="mt-2 text-xs text-orange-500 font-bold">
+                            <i className="fas fa-edit mr-1"></i> 수정 중...
+                        </div>
+                    )}
                   </div>
                 ))}
               </div>
