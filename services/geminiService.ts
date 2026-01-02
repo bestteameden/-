@@ -215,9 +215,10 @@ Provide the result strictly in JSON format matching the schema below, but follow
   `;
 
   try {
-    // Reverted to gemini-3-pro-preview for highest quality analysis
+    // Switched to gemini-3-flash-preview for faster processing of large JSON responses
+    // gemini-3-pro-preview was timing out due to thinking budget and large context
     const response = await ai.models.generateContent({
-      model: "gemini-3-pro-preview",
+      model: "gemini-3-flash-preview", 
       contents: prompt,
       config: {
         responseMimeType: "application/json",
