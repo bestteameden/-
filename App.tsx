@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { AppTab, Shot } from './types';
 import { db } from './services/databaseService';
@@ -32,6 +31,57 @@ const App: React.FC = () => {
     setShotDb(db.getShots());
     setStaffAccounts(db.getStaff());
   }, []);
+
+  // API Key Check
+  const apiKey = process.env.API_KEY;
+  if (!apiKey) {
+    return (
+      <div className="min-h-screen bg-black text-white flex items-center justify-center p-4">
+        <div className="max-w-2xl w-full bg-gray-900 border border-red-500/50 rounded-3xl p-8 md:p-12 shadow-2xl">
+          <div className="flex items-center gap-4 mb-6">
+            <div className="w-12 h-12 bg-red-500/20 text-red-500 rounded-full flex items-center justify-center text-xl">
+              <i className="fas fa-exclamation-triangle"></i>
+            </div>
+            <h1 className="text-2xl font-bold text-red-500">API 설정 오류 (Configuration Error)</h1>
+          </div>
+
+          <p className="mb-8 text-gray-300 text-lg leading-relaxed">
+            Vercel 환경 변수 설정이 잘못되어 앱이 API Key를 찾지 못하고 있습니다.<br/>
+            <strong>Key(이름)</strong> 칸에 API Key 값을 넣으신 경우일 확률이 높습니다.
+          </p>
+          
+          <div className="bg-black p-8 rounded-2xl border border-gray-800 mb-8">
+            <h2 className="font-bold text-[#87CEEB] mb-6 text-lg">✅ Vercel 올바른 설정 방법</h2>
+            <div className="grid grid-cols-[100px_1fr] gap-y-6 gap-x-4 items-center">
+              <div className="text-gray-500 font-medium">Key (이름)</div>
+              <div className="font-mono font-bold text-green-400 text-lg bg-green-400/10 px-3 py-1 rounded w-fit">API_KEY</div>
+              
+              <div className="text-gray-500 font-medium">Value (값)</div>
+              <div className="font-mono text-white break-all bg-gray-800 px-3 py-2 rounded text-sm">
+                AIzaSy... (복사한 긴 코드를 여기에 붙여넣기)
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-red-900/10 p-6 rounded-xl border border-red-500/20 text-red-200 text-sm leading-relaxed mb-8">
+            <strong>💡 흔한 실수:</strong><br/>
+            혹시 <strong>Key</strong> 칸에 <code className="bg-red-900/50 px-1 rounded">AIza...</code> 로 시작하는 긴 코드를 넣으셨나요?<br/>
+            Key 칸에는 반드시 영어로 <strong>API_KEY</strong> 라고 적어주셔야 컴퓨터가 인식합니다.
+          </div>
+          
+          <div className="text-center">
+              <p className="text-gray-500 mb-4 text-sm">설정을 수정하고 <strong>Redeploy</strong> 하신 후 아래 버튼을 눌러주세요.</p>
+              <button 
+                onClick={() => window.location.reload()} 
+                className="px-8 py-3 bg-white text-black font-bold rounded-xl hover:bg-gray-200 transition-colors flex items-center justify-center gap-2 mx-auto"
+              >
+                <i className="fas fa-sync-alt"></i> 새로고침
+              </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
