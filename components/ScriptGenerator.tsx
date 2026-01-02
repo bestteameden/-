@@ -1,6 +1,5 @@
-
 import React, { useState } from 'react';
-import { AdvertiserInfo, ScriptResult, AppTab } from '../types';
+import { AdvertiserInfo, ScriptResult } from '../types';
 import { generateScript } from '../services/geminiService';
 
 interface Props {

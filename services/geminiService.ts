@@ -1,4 +1,3 @@
-
 import { GoogleGenAI, Type } from "@google/genai";
 import { AdvertiserInfo, ScriptResult, ScenePlanItem, Shot } from "../types";
 
@@ -61,7 +60,11 @@ export const generateScript = async (info: AdvertiserInfo): Promise<ScriptResult
     }
   });
 
-  return JSON.parse(response.text);
+  const text = response.text;
+  if (!text) {
+    throw new Error("AI returned empty response");
+  }
+  return JSON.parse(text);
 };
 
 export const generateScenePlan = async (script: string, shotDb: Shot[]): Promise<ScenePlanItem[]> => {
@@ -114,5 +117,9 @@ export const generateScenePlan = async (script: string, shotDb: Shot[]): Promise
     }
   });
 
-  return JSON.parse(response.text);
+  const text = response.text;
+  if (!text) {
+    throw new Error("AI returned empty response");
+  }
+  return JSON.parse(text);
 };
