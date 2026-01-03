@@ -156,8 +156,6 @@ export const generateScript = async (info: AdvertiserInfo): Promise<ScriptResult
       throw new Error("AI returned empty response");
     }
 
-    console.log("Raw Script Response:", text); // Debugging
-
     try {
       const cleanText = cleanJsonText(text);
       return JSON.parse(cleanText);
@@ -170,6 +168,100 @@ export const generateScript = async (info: AdvertiserInfo): Promise<ScriptResult
   } catch (error) {
     handleApiError(error, "Script");
     throw error; 
+  }
+};
+
+export const tuneScript = async (originalScript: string): Promise<ScriptResult> => {
+  const ai = getAiClient();
+  const prompt = `
+# [System Identity]
+- 명칭: EDEN 바이럴 마스터 (Viral DNA Architect)
+- 역할: 98개 성공 영상 데이터를 기반으로 원본 대본을 냉정하게 평가하고, '팔리는 대본'으로 재건축하는 AI.
+
+# [Task 1: 범용 에덴 스코어 진단 (Cross-Industry Audit)]
+입력된 대본을 다음 5가지 기준으로 각각 20점 만점으로 평가하고(총점 100점), 독설가 톤으로 피드백하십시오.
+
+1. [도입부 패턴 중단 (20점)]:
+   - 질문형(X) -> 경고/지적/상식 파괴(O) 여부. 시청자의 행동을 즉각 제어하는가?
+2. [문장 호흡 및 정보 밀도 (20점)]:
+   - 18~20자 단문 유지 여부. 설명조의 긴 문장이 있으면 감점.
+3. [산업군별 파괴적 단어 (20점)]:
+   - 뷰티(삭제/전멸), 청소(박멸), 교육(해킹) 등 직군별 타격감 있는 단어 배치 여부.
+4. [정보의 권위 및 은닉 (20점)]:
+   - 제품명을 숨기고 '내부자만 아는 비결' 프레임(알바생 폭로, 실장님 비밀 등)을 씌웠는가?
+5. [가치 전도 및 압박 (20점)]:
+   - 단순 혜택이 아닌 '손실 회피(안 사면 손해)' 및 '긴급성(짤없음)' 부여 여부.
+
+# [Task 2: 대본 심폐소생 튜닝 (Rewrite Rules)]
+진단 결과를 바탕으로 다음 규칙을 100% 적용하여 대본을 다시 쓰시오.
+
+1. **분량 제한 (Critical)**: 튜닝된 원고는 공백 포함 **280자 이상 320자 이내**로 작성한다. (영상 길이 45~50초 최적화)
+2. **말투**: 친절함을 버리고, 30대 업계 관계자가 답답해하며 알려주는 '독설/폭로' 톤을 유지한다.
+3. **플로우**:
+   - 도입(0-3초): "아직도 ~~함? 돈 버리는 중임" (상식 파괴)
+   - 전개(3-15초): "원장님들만 아는 비결 풀겠음" (권위/은닉)
+   - 절정(15-30초): "요철 전멸한 거 보임? 이게 기술임" (시각적 입증)
+   - 결말(30-45초): "이 가격 3일 뒤 끝남. 짤없음" (행동 강제)
+
+[Input Script]
+${originalScript}
+
+[Output Schema]
+Provide the output strictly in JSON format matching the schema.
+- **hookStrategy**:
+  Output format must be:
+  "[EDEN 진단 점수: 00점/100점]
+   1. 패턴 중단: 00점 - (이유)
+   2. 문장 호흡: 00점 - (이유)
+   3. 파괴적 단어: 00점 - (이유)
+   4. 정보 은닉: 00점 - (이유)
+   5. 가치 압박: 00점 - (이유)
+
+   [에덴의 냉정 피드백]
+   (데이터베이스에 기반하여 어떤 부분이 시청자 이탈을 부르는지 독하게 지적)"
+- **keywordStrategy**: Summary of words replaced (e.g., "좋아요 -> 전멸").
+- **fullScript**: The tuned script (Must be 280-320 characters).
+- **successPoints**: Visual shot suggestions matching the new script.
+- **hookType**: "EDEN 튜닝 모드".
+- **flowType**: "Viral DNA Architect".
+- **charCount**: Count of the tuned script.
+  `;
+
+  try {
+    const response = await ai.models.generateContent({
+      model: "gemini-3-pro-preview",
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            hookStrategy: { type: Type.STRING },
+            keywordStrategy: { type: Type.STRING },
+            hookType: { type: Type.STRING },
+            flowType: { type: Type.STRING },
+            charCount: { type: Type.INTEGER },
+            fullScript: { type: Type.STRING },
+            successPoints: { type: Type.STRING },
+          },
+          required: ["hookStrategy", "keywordStrategy", "hookType", "flowType", "charCount", "fullScript", "successPoints"]
+        }
+      }
+    });
+
+    const text = response.text;
+    if (!text) throw new Error("AI returned empty response");
+
+    try {
+      return JSON.parse(cleanJsonText(text));
+    } catch (parseError) {
+      console.error("JSON Parse Error:", parseError);
+      throw new Error("AI 응답을 분석하는 중 오류가 발생했습니다.");
+    }
+
+  } catch (error) {
+    handleApiError(error, "Tuning Script");
+    throw error;
   }
 };
 
@@ -470,7 +562,7 @@ export const generateProposal = async (inputs: ProposalInputs): Promise<string> 
      - \`@page { size: A4; margin: 0; }\`
      - \`html, body { width: 210mm; height: 297mm; background-color: #000000 !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; margin: 0 !important; padding: 0 !important; }\`
      - \`section { width: 210mm !important; height: 297mm !important; max-height: 297mm !important; page-break-after: always; background-color: #000000 !important; color: #ffffff !important; display: flex !important; flex-direction: column !important; justify-content: center !important; overflow: hidden !important; border: none !important; }\`
-     - **Fix Overlapping Prices**: Use \`display: grid !important; grid-template-columns: repeat(3, 1fr) !important; gap: 10px !important;\` for the pricing container. Ensure font size is reduced for price cards (\`font-size: 10pt !important\`). If 3 columns are too tight, stack them? No, user prefers the table. Just ensure small font and no padding overflow.
+     - **Fix Overlapping Prices**: Use \`display: grid !important; grid-template-columns: repeat(3, 1fr) !important; gap: 10px !important;\` for the pricing container. Ensure font size is reduced for price cards (\`font-size: 10pt !important\`).
      - **Typography**: Force font sizes to fit A4. \`h1 { font-size: 32pt !important; margin-bottom: 10mm !important; } h2 { font-size: 24pt !important; margin-bottom: 5mm !important; } p { font-size: 11pt !important; color: #ccc !important; }\`
      - **Hide Elements**: \`button, .no-print, nav, header, footer, .fa-chevron-down { display: none !important; }\`
      - **Canvas**: \`canvas { max-width: 100% !important; max-height: 80mm !important; }\`
