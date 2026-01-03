@@ -2,12 +2,30 @@ import { GoogleGenAI, Type } from "@google/genai";
 import { AdvertiserInfo, ScriptResult, ScenePlanItem, Shot, MetaInputs, MetaAnalysisResult, ProposalInputs } from "../types";
 
 // Helper to clean markdown code blocks from response
+// More robust version that finds the first { or [ and the last } or ]
 const cleanJsonText = (text: string): string => {
   let clean = text.trim();
-  if (clean.startsWith("```")) {
-    // Remove opening ```json or ``` and closing ```
-    clean = clean.replace(/^```(json)?\n?/, "").replace(/\n?```$/, "");
+  
+  // Remove markdown code blocks if present
+  clean = clean.replace(/^```(json)?|```$/g, "");
+  
+  // Find the JSON object or array
+  const firstBrace = clean.indexOf('{');
+  const firstBracket = clean.indexOf('[');
+  const lastBrace = clean.lastIndexOf('}');
+  const lastBracket = clean.lastIndexOf(']');
+
+  // Check if it's an object or array and slice accordingly
+  if (firstBrace !== -1 && (firstBracket === -1 || firstBrace < firstBracket)) {
+    if (lastBrace !== -1) {
+      return clean.substring(firstBrace, lastBrace + 1);
+    }
+  } else if (firstBracket !== -1) {
+    if (lastBracket !== -1) {
+      return clean.substring(firstBracket, lastBracket + 1);
+    }
   }
+  
   return clean;
 };
 
@@ -184,7 +202,7 @@ export const tuneScript = async (originalScript: string): Promise<ScriptResult> 
 1. [도입부 패턴 중단 (20점)]:
    - 질문형(X) -> 경고/지적/상식 파괴(O) 여부. 시청자의 행동을 즉각 제어하는가?
 2. [문장 호흡 및 정보 밀도 (20점)]:
-   - 18~20자 단문 유지 여부. 설명조의 긴 문장이 있으면 감점.
+   - 18~20자 단문 유지 여부. 설명조의 긴 문장은 예외 없이 감점.
 3. [산업군별 파괴적 단어 (20점)]:
    - 뷰티(삭제/전멸), 청소(박멸), 교육(해킹) 등 직군별 타격감 있는 단어 배치 여부.
 4. [정보의 권위 및 은닉 (20점)]:
@@ -267,38 +285,33 @@ Provide the output strictly in JSON format matching the schema.
 
 export const generateScenePlan = async (script: string, shotDb: Shot[]): Promise<ScenePlanItem[]> => {
   const ai = getAiClient();
-  const shotDbString = JSON.stringify(shotDb);
+  
+  // Simplify DB to prevent excessive token usage and confusion
+  const simpleShotDb = shotDb.map(s => ({
+      name: s.name,
+      action: s.action,
+      desc: s.description,
+      link: s.link
+  }));
+  const shotDbString = JSON.stringify(simpleShotDb);
   
   const prompt = `
-# [Role]
-당신은 에덴 마케팅의 성공 영상 98개를 전수 분석한 데이터를 보유한 '시각적 바이럴 공학 전문가'입니다. 
-제공된 대본의 각 문장을 분석하여 시청자의 뇌가 반응하는 최적의 촬영 구도안을 매칭합니다.
+# [Task]
+Split the provided script into sentences and map the best 2 shots from the 'Shot Database' for each sentence.
 
-[대본]
+[Script]
 ${script}
 
-[가용 구도 DB (Knowledge Base)]
+[Shot Database]
 ${shotDbString}
 
-# [Section 1: 구도 매칭 절대 가이드]
-1. 문장별 분해: 대본을 한 문장씩 뜯어서 각 문장에 가장 어울리는 구도를 [2개씩] 제안한다.
-2. 직관적 액션: 모델이 즉각 이해할 수 있는 단순하고 강렬한 동작 위주로 전달한다.
-3. 편집 배제: "줌인 효과", "자막 넣기" 등 편집 기술이 아닌, 촬영 현장에서의 [카메라 무빙]과 [모델의 신체 동작]만 기술한다.
-4. 예시 링크: 추천 구도 정보에 DB의 원본 링크를 반드시 포함한다.
-5. 흐름 검수: 촬영 구도안 작성이 완료되면 영상 흐름상 어색함이 없는지 다시 한번 체크한다.
-
-# [System Logic: 상세 분석 예시]
-원고: 피부과 원장님이 다시는 오지 말래요..!
-AI 추천 영상 구도 Logic:
-1. [거절 손짓] - 카메라를 향해 단호하게 손바닥을 내밀며 고개를 젓는 동작.
-2. [충격 리액션] - 원장님의 말을 듣고 억울해하며 카메라 앞에서 뒤로 움찔 물러나는 동작.
-
-[Output Format]
-Provide the result strictly in JSON format matching the schema below, but following the logic above.
+[Strict Constraints]
+1. **sentenceId**: Must be a simple sequential integer starting from 1 (e.g., 1, 2, 3...). Do NOT use timestamps or random large numbers.
+2. **Output**: Return strictly valid JSON. No markdown formatting.
   `;
 
   try {
-    // Switched to gemini-3-flash-preview for faster processing of large JSON responses
+    // Switched to gemini-3-flash-preview for speed, with refined prompt to prevent number looping
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview", 
       contents: prompt,
@@ -309,7 +322,7 @@ Provide the result strictly in JSON format matching the schema below, but follow
           items: {
             type: Type.OBJECT,
             properties: {
-              sentenceId: { type: Type.INTEGER },
+              sentenceId: { type: Type.INTEGER, description: "Sequential index (1, 2, 3...)" },
               sentence: { type: Type.STRING },
               recommendations: {
                 type: Type.ARRAY,
@@ -332,8 +345,6 @@ Provide the result strictly in JSON format matching the schema below, but follow
     if (!text) {
       throw new Error("AI returned empty response");
     }
-
-    console.log("Raw Scene Response:", text); // Debugging
 
     try {
       const cleanText = cleanJsonText(text);
