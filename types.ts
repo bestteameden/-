@@ -3,6 +3,7 @@ export enum AppTab {
   SCRIPT_GENERATOR = 'SCRIPT_GENERATOR',
   SCENE_PLAN_MAKER = 'SCENE_PLAN_MAKER',
   META_CALCULATOR = 'META_CALCULATOR',
+  PROPOSAL_GENERATOR = 'PROPOSAL_GENERATOR',
   ADMIN_PAGE = 'ADMIN_PAGE'
 }
 
@@ -92,4 +93,10 @@ export interface MetaAnalysisResult {
     }>;
     advice: string;
   };
+}
+
+export interface ProposalInputs {
+  clientName: string;
+  searchVolume: [string, string, string, string]; // 4 months data
+  mainProduct: string; // 주력 판매 상품
 }

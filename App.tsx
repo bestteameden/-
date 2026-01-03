@@ -6,6 +6,7 @@ import Layout from './components/Layout';
 import ScriptGenerator from './components/ScriptGenerator';
 import ScenePlanMaker from './components/ScenePlanMaker';
 import MetaCalculator from './components/MetaCalculator';
+import ProposalGenerator from './components/ProposalGenerator';
 import AdminDashboard from './components/AdminDashboard';
 
 const App: React.FC = () => {
@@ -183,6 +184,10 @@ const App: React.FC = () => {
 
       {activeTab === AppTab.META_CALCULATOR && (
         <MetaCalculator />
+      )}
+
+      {activeTab === AppTab.PROPOSAL_GENERATOR && (
+        <ProposalGenerator />
       )}
       
       {activeTab === AppTab.ADMIN_PAGE && (

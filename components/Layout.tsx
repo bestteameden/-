@@ -44,6 +44,12 @@ const Layout: React.FC<LayoutProps> = ({ activeTab, onTabChange, children, onLog
               메타 최적값 계산기
             </button>
             <button 
+              onClick={() => onTabChange(AppTab.PROPOSAL_GENERATOR)}
+              className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${activeTab === AppTab.PROPOSAL_GENERATOR ? 'bg-white text-black' : 'text-gray-400 hover:text-white'}`}
+            >
+              제안서 생성기
+            </button>
+            <button 
               onClick={() => onTabChange(AppTab.ADMIN_PAGE)}
               className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${activeTab === AppTab.ADMIN_PAGE ? 'bg-[#87CEEB] text-black font-bold' : 'text-gray-400 hover:text-white'}`}
             >

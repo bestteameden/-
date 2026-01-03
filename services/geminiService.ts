@@ -1,5 +1,5 @@
 import { GoogleGenAI, Type } from "@google/genai";
-import { AdvertiserInfo, ScriptResult, ScenePlanItem, Shot, MetaInputs, MetaAnalysisResult } from "../types";
+import { AdvertiserInfo, ScriptResult, ScenePlanItem, Shot, MetaInputs, MetaAnalysisResult, ProposalInputs } from "../types";
 
 // Helper to clean markdown code blocks from response
 const cleanJsonText = (text: string): string => {
@@ -10,6 +10,16 @@ const cleanJsonText = (text: string): string => {
   }
   return clean;
 };
+
+// Helper to clean HTML code blocks
+const cleanHtmlText = (text: string): string => {
+  let clean = text.trim();
+  // Match code blocks like ```html ... ``` or just ``` ... ```
+  if (clean.startsWith("```")) {
+     clean = clean.replace(/^```(html)?\n?/, "").replace(/\n?```$/, "");
+  }
+  return clean;
+}
 
 // Validate API Key before usage
 const getAiClient = () => {
@@ -413,3 +423,173 @@ Provide the result strictly in JSON format matching the schema below.
     throw error;
   }
 };
+
+export const generateProposal = async (inputs: ProposalInputs): Promise<string> => {
+    const ai = getAiClient();
+
+    // Prepare variables
+    const searchDataStr = JSON.stringify(inputs.searchVolume.map(v => Number(v)));
+    const dateStr = new Date().toLocaleDateString();
+
+    const prompt = `
+  # [Role]
+  You are an Expert Web Developer. Generate a **complete, standalone HTML5 file** that serves as a high-end marketing proposal.
+  The user wants to **PRINT this HTML as a PDF (A4 size)**.
+  
+  # [Input Data]
+  - Client Name: ${inputs.clientName}
+  - Main Product: ${inputs.mainProduct}
+  - Search Volume Data: ${searchDataStr}
+  - Date: ${dateStr}
+
+  # [Mandatory Content Narrative]
+  1. **Language**: Use **Korean** for 90% of the content (descriptions, diagnosis). Use **English** for 10% (Headlines, Keywords, Status) to look professional.
+  2. **Section 1 (Cover)**: Client Name, Date.
+  3. **Section 2 (Awareness)**: Analyze the search volume trend of "${inputs.mainProduct}" or the brand. 
+     - If trend is up: "Interest is rising, but sales are not exploding? Diagnosis: Conversion Deficiency."
+     - If trend is down: "Brand awareness is fading. Diagnosis: Need new viral injection."
+  4. **Section 3 (Market Context - The Logic)**: 
+     - **"RED OCEAN"**: State that the current beauty market is saturated.
+     - **"MCN BUBBLE"**: Existing MCNs have high costs, low ROI, and bubble prices. They focus on influencers who don't convert.
+     - **"EDEN SOLUTION"**: We use 100 Million+ View Data & Viral Engineering. We focus on "Visual Dopamine" and "Cost-Effectiveness".
+  5. **Section 4 (EDEN Service Packages)**: **MUST** include this exact pricing table (Do not change prices):
+     - **Option 1**: Nano Influencers (3 people) + Planning/Shooting/Editing (3 Shorts) = **600,000 KRW**
+     - **Option 2**: Nano Influencers (5 people) + Planning/Shooting/Editing (5 Shorts) = **1,000,000 KRW**
+     - **Option 3**: Nano Influencers (10 people) + Planning/Shooting/Editing (10 Shorts) = **2,000,000 KRW**
+     - *Key Selling Point*: "EDEN handles EVERYTHING (Planning, Recruiting, Shooting, Editing)."
+  6. **Section 5 (Contact)**:
+     - **Agency**: EDEN MARKETING
+     - **Email**: bestteameden@gmail.com
+     - **Contact**: 010-4036-0525
+
+  # [CRITICAL Technical Requirement: A4 Print & Dark Mode]
+  The user is complaining that **the background turns WHITE** and **layout breaks** when printing.
+  YOU MUST FIX THIS by enforcing STRICT print styles.
+  
+  1. **@media print**:
+     - \`@page { size: A4; margin: 0; }\`
+     - \`html, body { width: 210mm; height: 297mm; background-color: #000000 !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; margin: 0 !important; padding: 0 !important; }\`
+     - \`section { width: 210mm !important; height: 297mm !important; max-height: 297mm !important; page-break-after: always; background-color: #000000 !important; color: #ffffff !important; display: flex !important; flex-direction: column !important; justify-content: center !important; overflow: hidden !important; border: none !important; }\`
+     - **Fix Overlapping Prices**: Use \`display: grid !important; grid-template-columns: repeat(3, 1fr) !important; gap: 10px !important;\` for the pricing container. Ensure font size is reduced for price cards (\`font-size: 10pt !important\`). If 3 columns are too tight, stack them? No, user prefers the table. Just ensure small font and no padding overflow.
+     - **Typography**: Force font sizes to fit A4. \`h1 { font-size: 32pt !important; margin-bottom: 10mm !important; } h2 { font-size: 24pt !important; margin-bottom: 5mm !important; } p { font-size: 11pt !important; color: #ccc !important; }\`
+     - **Hide Elements**: \`button, .no-print, nav, header, footer, .fa-chevron-down { display: none !important; }\`
+     - **Canvas**: \`canvas { max-width: 100% !important; max-height: 80mm !important; }\`
+
+  2. **Structure**: Single HTML string. No external markdown.
+  3. **Theme**: Dark Mode (#000000) with Neon Green (#00FF41) accents.
+
+  # [HTML Structure Template]
+  \`\`\`html
+  <!DOCTYPE html>
+  <html lang="ko">
+  <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>EDEN REPORT | ${inputs.clientName}</title>
+      <script src="https://cdn.tailwindcss.com"></script>
+      <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+      <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+      <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.8/dist/web/variable/pretendardvariable.css" />
+      <style>
+          body { font-family: 'Pretendard Variable', sans-serif; background-color: #000; color: #fff; margin: 0; }
+          section { min-height: 100vh; padding: 40px; border-bottom: 1px solid #111; display: flex; flex-direction: column; justify-content: center; position: relative; }
+          .glass { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 20px; padding: 20px; }
+          .accent { color: #00FF41; }
+          .bg-accent { background-color: #00FF41; color: #000; }
+          table { width: 100%; border-collapse: separate; border-spacing: 0 10px; }
+          th, td { padding: 15px; text-align: left; }
+          th { color: #888; border-bottom: 1px solid #333; }
+          td { background: rgba(255,255,255,0.03); }
+          .price-card { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 15px; padding: 20px; text-align: center; }
+          .price-tag { font-size: 1.5rem; font-weight: bold; color: #00FF41; margin-top: 10px; }
+          
+          /* STRICT PRINT STYLES */
+          @media print {
+              @page { size: A4; margin: 0; }
+              html, body {
+                  width: 210mm; height: 297mm;
+                  background-color: #000000 !important;
+                  -webkit-print-color-adjust: exact !important;
+                  print-color-adjust: exact !important;
+                  margin: 0 !important; padding: 0 !important;
+              }
+              section { 
+                  width: 210mm !important; height: 297mm !important;
+                  max-height: 297mm !important;
+                  page-break-after: always; 
+                  page-break-inside: avoid;
+                  background-color: #000000 !important;
+                  color: #ffffff !important;
+                  padding: 15mm !important;
+                  display: flex !important;
+                  flex-direction: column !important;
+                  justify-content: center !important;
+                  overflow: hidden !important;
+                  border: none !important;
+              }
+              .no-print, .animate-bounce, button, .fa-chevron-down { display: none !important; }
+              canvas { max-height: 300px !important; width: 100% !important; }
+              h1 { font-size: 32pt !important; margin-bottom: 10mm !important; }
+              h2 { font-size: 24pt !important; margin-bottom: 5mm !important; }
+              p, li, td { font-size: 11pt !important; color: #e5e5e5 !important; }
+              .price-card { background-color: #111 !important; border: 1px solid #333 !important; font-size: 10pt !important; padding: 10px !important; }
+              .price-tag { font-size: 14pt !important; }
+              .grid-cols-3 { display: grid !important; grid-template-columns: repeat(3, 1fr) !important; gap: 10px !important; }
+          }
+      </style>
+  </head>
+  <body>
+      <!-- Section 1: Cover -->
+      <section>
+          <!-- Title, Client Name, Date -->
+      </section>
+      
+      <!-- Section 2: Awareness (Search Volume) -->
+      <section>
+          <!-- Chart -->
+          <!-- Diagnosis: Saturated Market, Red Ocean -->
+      </section>
+
+      <!-- Section 3: The Logic (Red Ocean -> MCN Problems -> Eden Solution) -->
+      <section>
+           <!-- Content about MCN Bubble and Eden's 100M Views -->
+      </section>
+      
+      <!-- Section 4: Service Packages (Pricing Table) -->
+      <section>
+          <h2 class="text-4xl font-bold mb-10 text-center italic">EDEN <span class="accent">SERVICE PLANS</span></h2>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6 grid-cols-3">
+              <!-- Option 1: 3 People / 600k -->
+              <!-- Option 2: 5 People / 1m -->
+              <!-- Option 3: 10 People / 2m -->
+          </div>
+      </section>
+
+      <!-- Section 5: Contact -->
+      <section>
+           <!-- Updated Contact Info: EDEN MARKETING, bestteameden@gmail.com, 010-4036-0525 -->
+      </section>
+
+      <script>/* Chart.js logic */</script>
+  </body>
+  </html>
+  \`\`\`
+  `;
+  
+    try {
+      const response = await ai.models.generateContent({
+        model: "gemini-3-flash-preview",
+        contents: prompt,
+      });
+  
+      const text = response.text;
+      if (!text) {
+        throw new Error("AI returned empty response");
+      }
+      return cleanHtmlText(text);
+  
+    } catch (error) {
+      handleApiError(error, "Proposal Generation");
+      throw error;
+    }
+  };
